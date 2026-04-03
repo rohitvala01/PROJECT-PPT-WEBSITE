@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NewsRovalt - Project Presentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --bg2: #141414;
+    --fg: #f0ece4;
+    --muted: #8a8578;
+    --accent: #d4a853;
+    --accent2: #e8c675;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(212,168,83,0.15);
+    --glass: rgba(20,20,20,0.85);
+    --danger: #c0392b;
+    --success: #27ae60;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    cursor: default;
+  }
+
+  /* ===== 背景氛围 ===== */
+  .bg-atmosphere {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .bg-atmosphere .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.15;
+    animation: orbFloat 20s ease-in-out infinite alternate;
+  }
+  .bg-atmosphere .orb:nth-child(1) {
+    width: 600px; height: 600px;
+    background: var(--accent);
+    top: -200px; left: -100px;
+  }
+  .bg-atmosphere .orb:nth-child(2) {
+    width: 500px; height: 500px;
+    background: #8b5e34;
+    bottom: -200px; right: -100px;
+    animation-delay: -7s;
+  }
+  .bg-atmosphere .orb:nth-child(3) {
+    width: 400px; height: 400px;
+    background: var(--accent2);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: -13s;
+    opacity: 0.08;
+  }
+  @keyframes orbFloat {
+    0% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(40px, -30px) scale(1.1); }
+    100% { transform: translate(-20px, 20px) scale(0.95); }
+  }
+
+  /* 网格纹理 */
+  .bg-grid {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(212,168,83,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212,168,83,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* ===== 幻灯片容器 ===== */
+  .presentation {
+    position: relative;
+    z-index: 1;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(40px) scale(0.97);
+    transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1),
+                transform 0.7s cubic-bezier(0.4,0,0.2,1),
+                visibility 0.7s;
+    will-change: transform, opacity;
+  }
+  .slide.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+  .slide.exit-up {
+    opacity: 0;
+    transform: translateY(-60px) scale(0.97);
+  }
+
+  /* ===== 进度条 ===== */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    z-index: 100;
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 0 20px rgba(212,168,83,0.4);
+  }
+
+  /* ===== 导航控件 ===== */
+  .nav-controls {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    padding: 10px 24px;
+    border-radius: 60px;
+  }
+  .nav-btn {
+    width: 42px; height: 42px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--fg);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.3s;
+  }
+  .nav-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    transform: scale(1.1);
+  }
+  .nav-btn:active { transform: scale(0.95); }
+  .slide-counter {
+    font-size: 14px;
+    color: var(--muted);
+    min-width: 70px;
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .slide-counter span { color: var(--accent); font-size: 18px; }
+
+  /* 幻灯片缩略图面板 */
+  .slide-panel-toggle {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+    width: 36px; height: 36px;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.3s;
+  }
+  .slide-panel-toggle:hover { color: var(--accent); border-color: var(--accent); }
+
+  .slide-panel {
+    position: fixed;
+    right: -280px;
+    top: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--glass);
+    backdrop-filter: blur(30px);
+    border-left: 1px solid var(--border);
+    z-index: 99;
+    padding: 60px 16px 100px;
+    overflow-y: auto;
+    transition: right 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  .slide-panel.open { right: 0; }
+  .slide-panel::-webkit-scrollbar { width: 4px; }
+  .slide-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .panel-item {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s;
+    margin-bottom: 4px;
+    border-left: 2px solid transparent;
+  }
+  .panel-item:hover { color: var(--fg); background: var(--card); }
+  .panel-item.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(212,168,83,0.06);
+  }
+
+  /* ===== 通用排版 ===== */
+  .slide-tag {
+    display: inline-block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    padding: 6px 18px;
+    border-radius: 30px;
+    margin-bottom: 20px;
+    font-weight: 600;
+  }
+
+  .slide-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: clamp(28px, 4vw, 52px);
+    line-height: 1.15;
+    margin-bottom: 20px;
+    color: var(--fg);
+  }
+  .slide-title .highlight {
+    color: var(--accent);
+    position: relative;
+  }
+  .slide-title .highlight::after {
+    content: '';
+    position: absolute;
+    bottom: 2px; left: 0;
+    width: 100%; height: 3px;
+    background: var(--accent);
+    opacity: 0.3;
+    border-radius: 2px;
+  }
+
+  .slide-subtitle {
+    font-size: clamp(15px, 1.8vw, 20px);
+    color: var(--muted);
+    font-weight: 300;
+    line-height: 1.7;
+    max-width: 700px;
+  }
+
+  .slide-body {
+    font-size: clamp(14px, 1.4vw, 17px);
+    color: rgba(240,236,228,0.75);
+    line-height: 1.8;
+    max-width: 900px;
+  }
+
+  /* ===== 动画元素 ===== */
+  .anim { opacity: 0; transform: translateY(25px); }
+  .slide.active .anim {
+    animation: fadeUp 0.7s cubic-bezier(0.4,0,0.2,1) forwards;
+  }
+  .slide.active .anim.d1 { animation-delay: 0.1s; }
+  .slide.active .anim.d2 { animation-delay: 0.2s; }
+  .slide.active .anim.d3 { animation-delay: 0.3s; }
+  .slide.active .anim.d4 { animation-delay: 0.4s; }
+  .slide.active .anim.d5 { animation-delay: 0.5s; }
+  .slide.active .anim.d6 { animation-delay: 0.6s; }
+  .slide.active .anim.d7 { animation-delay: 0.7s; }
+  .slide.active .anim.d8 { animation-delay: 0.8s; }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+  .slide.active .anim-fade {
+    animation: fadeIn 1s ease forwards;
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .slide.active .anim-scale {
+    animation: scaleIn 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
+  }
+
+  @keyframes slideLeft {
+    from { opacity: 0; transform: translateX(60px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .slide.active .anim-left {
+    animation: slideLeft 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
+  }
+
+  @keyframes slideRight {
+    from { opacity: 0; transform: translateX(-60px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .slide.active .anim-right {
+    animation: slideRight 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
+  }
+
+  @keyframes typewriter {
+    from { width: 0; }
+    to { width: 100%; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+
+  @keyframes borderGlow {
+    0%, 100% { border-color: rgba(212,168,83,0.15); }
+    50% { border-color: rgba(212,168,83,0.4); }
+  }
+
+  /* ===== 卡片组件 ===== */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    transition: all 0.35s;
+    backdrop-filter: blur(10px);
+  }
+  .card:hover {
+    border-color: rgba(212,168,83,0.35);
+    background: rgba(255,255,255,0.06);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+  .card-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: rgba(212,168,83,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  /* ===== 表格 ===== */
+  .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .styled-table th {
+    background: rgba(212,168,83,0.1);
+    color: var(--accent);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 11px;
+    border-bottom: 2px solid var(--border);
+  }
+  .styled-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: rgba(240,236,228,0.8);
+  }
+  .styled-table tr:hover td {
+    background: rgba(212,168,83,0.03);
+  }
+
+  /* ===== 列表 ===== */
+  .check-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .check-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 15px;
+    color: rgba(240,236,228,0.8);
+    line-height: 1.6;
+  }
+  .check-list li i {
+    color: var(--accent);
+    margin-top: 5px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .cross-list li i {
+    color: var(--danger);
+  }
+
+  /* ===== 两栏布局 ===== */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    width: 100%;
+    max-width: 1100px;
+  }
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  /* ===== 时间线 ===== */
+  .timeline {
+    position: relative;
+    padding-left: 30px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 22px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -26px; top: 6px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 3px rgba(212,168,83,0.2);
+  }
+  .timeline-item .t-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .timeline-item .t-text {
+    font-size: 15px;
+    color: rgba(240,236,228,0.8);
+    line-height: 1.6;
+  }
+
+  /* ===== 进度指标 ===== */
+  .stat-bar {
+    margin-bottom: 16px;
+  }
+  .stat-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .stat-bar-label span:first-child { color: var(--fg); font-weight: 600; }
+  .stat-bar-label span:last-child { color: var(--accent); }
+  .stat-bar-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .stat-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 3px;
+    width: 0%;
+    transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+  }
+  .slide.active .stat-bar-fill { /* 由JS控制 */ }
+
+  /* ===== 标题幻灯片专用 ===== */
+  .title-slide-logo {
+    width: 80px; height: 80px;
+    border: 2px solid var(--accent);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: var(--accent);
+    margin-bottom: 28px;
+    animation: borderGlow 3s ease-in-out infinite;
+  }
+  .title-divider {
+    width: 80px; height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    margin: 20px 0;
+  }
+  .title-meta {
+    display: flex;
+    gap: 30px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .title-meta i { color: var(--accent); margin-right: 6px; }
+
+  /* ===== 结尾幻灯片 ===== */
+  .thank-you-text {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(48px, 7vw, 100px);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent), var(--accent2), #f5e6c8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+  }
+
+  /* ===== UML图占位 ===== */
+  .diagram-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 30px;
+    width: 100%;
+    max-width: 800px;
+    position: relative;
+    overflow: hidden;
+  }
+  .diagram-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+  .uml-node {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(212,168,83,0.08);
+    border: 1px solid var(--border);
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .uml-node.actor {
+    border-radius: 50% 50% 0 0;
+    width: 50px; height: 60px;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0;
+    font-size: 10px;
+    text-align: center;
+  }
+  .uml-line {
+    width: 40px; height: 2px;
+    background: var(--border);
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .uml-arrow {
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid var(--accent);
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  /* ===== 简单UML绘制 ===== */
+  .use-case-diagram {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .uc-group {
+    background: rgba(212,168,83,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    min-width: 200px;
+    text-align: center;
+  }
+  .uc-group-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  .uc-item {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 7px 18px;
+    font-size: 12px;
+    color: var(--fg);
+    margin: 6px 0;
+    display: inline-block;
+    transition: all 0.3s;
+  }
+  .uc-item:hover {
+    border-color: var(--accent);
+    background: rgba(212,168,83,0.08);
+  }
+  .uc-connector {
+    color: var(--muted);
+    font-size: 24px;
+  }
+
+  /* ===== 数据库表样式 ===== */
+  .db-table {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    min-width: 280px;
+    background: var(--card);
+  }
+  .db-table-header {
+    background: rgba(212,168,83,0.1);
+    padding: 12px 18px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .db-table-header i { font-size: 12px; }
+  .db-table-body {
+    padding: 8px 0;
+  }
+  .db-row {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr 0.5fr 0.8fr;
+    padding: 6px 18px;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+    color: rgba(240,236,228,0.7);
+    align-items: center;
+  }
+  .db-row:last-child { border-bottom: none; }
+  .db-row .pk {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 10px;
+  }
+
+  /* ===== Gantt图 ===== */
+  .gantt-chart {
+    width: 100%;
+    max-width: 900px;
+    overflow-x: auto;
+  }
+  .gantt-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .gantt-label {
+    width: 180px;
+    flex-shrink: 0;
+    color: rgba(240,236,228,0.7);
+    padding-right: 12px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gantt-track {
+    flex: 1;
+    height: 22px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .gantt-bar {
+    position: absolute;
+    top: 2px; bottom: 2px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity: 0;
+    transition: opacity 0.6s, width 0.8s cubic-bezier(0.4,0,0.2,1);
+  }
+  .slide.active .gantt-bar { opacity: 0.85; }
+  .gantt-months {
+    display: flex;
+    margin-bottom: 10px;
+    padding-left: 180px;
+  }
+  .gantt-month {
+    flex: 1;
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ===== 键盘提示 ===== */
+  .key-hint {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 90;
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.5;
+    display: flex;
+    gap: 16px;
+  }
+  .key-hint kbd {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-family: inherit;
+    font-size: 10px;
+    color: var(--fg);
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 768px) {
+    .slide { padding: 40px 28px; }
+    .two-col, .three-col { grid-template-columns: 1fr; gap: 20px; }
+    .title-meta { flex-direction: column; gap: 10px; }
+    .gantt-label { width: 100px; font-size: 10px; }
+    .nav-controls { padding: 8px 16px; gap: 10px; }
+    .slide-panel { width: 240px; }
+    .key-hint { display: none; }
+    .db-row { grid-template-columns: 1fr 0.7fr 0.4fr; }
+    .db-row span:nth-child(3) { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ===== 截图模拟样式 ===== */
+  .screen-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 900px;
+  }
+  .screen-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.35s;
+  }
+  .screen-item:hover {
+    border-color: rgba(212,168,83,0.3);
+    transform: scale(1.03);
+  }
+  .screen-item-img {
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(135deg, rgba(212,168,83,0.05), rgba(255,255,255,0.02));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: var(--accent);
+    opacity: 0.6;
+  }
+  .screen-item-label {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .screen-item-desc {
+    padding: 0 14px 10px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 768px) {
+    .screen-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- 背景氛围 -->
+<div class="bg-atmosphere">
+  <div class="orb"></div>
+  <div class="orb"></div>
+  <div class="orb"></div>
+</div>
+<div class="bg-grid"></div>
+
+<!-- 进度条 -->
+<div class="progress-bar" id="progressBar" style="width:0%"></div>
+
+<!-- 幻灯片缩略图面板 -->
+<button class="slide-panel-toggle" id="panelToggle" aria-label="Open slide navigation">
+  <i class="fas fa-bars"></i>
+</button>
+<div class="slide-panel" id="slidePanel"></div>
+
+<!-- ===== 幻灯片区域 ===== -->
+<div class="presentation" id="presentation">
+
+  <!-- 幻灯片 1: 标题 -->
+  <div class="slide active" data-title="Title">
+    <div class="title-slide-logo anim-scale d1"><i class="fas fa-newspaper"></i></div>
+    <div class="slide-tag anim d2">B.Sc. IT - Semester VI Project</div>
+    <h1 class="slide-title anim d3" style="text-align:center; max-width:800px;">
+      <span class="highlight">NewsRovalt</span><br>News Web Application
+    </h1>
+    <div class="title-divider anim d4" style="margin:20px auto;"></div>
+    <p class="slide-subtitle anim d5" style="text-align:center;">
+      A centralized platform for real-time news updates across multiple categories
+    </p>
+    <div class="title-meta anim d6" style="justify-content:center; margin-top:30px;">
+      <span><i class="fas fa-user"></i>ROHIT VALA & NAITIK VALA </span>
+      <span><i class="fas fa-id-badge"></i>230761305132 & 230761305131</span>
+      <span><i class="fas fa-chalkboard-teacher"></i>Prof. Dharmishtha Surati</span>
+    </div>
+    <div class="title-meta anim d7" style="justify-content:center; margin-top:10px;">
+      <span><i class="fas fa-university"></i>SSASIT, Surat</span>
+      <span><i class="fas fa-calendar"></i>Academic Year 2025-26</span>
+    </div>
+  </div>
+
+  <!-- 幻灯片 2: 目录 -->
+  <div class="slide" data-title="Table of Contents">
+    <div class="slide-tag anim d1">Overview</div>
+    <h2 class="slide-title anim d2">Table of <span class="highlight">Contents</span></h2>
+    <div class="two-col anim d3" style="margin-top:30px;">
+      <div class="timeline">
+        <div class="timeline-item"><div class="t-label">01</div><div class="t-text">Project Description & Definition</div></div>
+        <div class="timeline-item"><div class="t-label">02</div><div class="t-text">Environment Description</div></div>
+        <div class="timeline-item"><div class="t-label">03</div><div class="t-text">System Description & Functionality</div></div>
+        <div class="timeline-item"><div class="t-label">04</div><div class="t-text">Feasibility Study</div></div>
+        <div class="timeline-item"><div class="t-label">05</div><div class="t-text">Software Engineering Model</div></div>
+      </div>
+      <div class="timeline">
+        <div class="timeline-item"><div class="t-label">06</div><div class="t-text">Timeline & Scheduling</div></div>
+        <div class="timeline-item"><div class="t-label">07</div><div class="t-text">System Analysis & UML Diagrams</div></div>
+        <div class="timeline-item"><div class="t-label">08</div><div class="t-text">Database Design</div></div>
+        <div class="timeline-item"><div class="t-label">09</div><div class="t-text">System Implementation & Screens</div></div>
+        <div class="timeline-item"><div class="t-label">10</div><div class="t-text">Testing, Conclusion & Future Scope</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 3: 项目介绍 -->
+  <div class="slide" data-title="Introduction">
+    <div class="slide-tag anim d1">Chapter 1</div>
+    <h2 class="slide-title anim d2">Project <span class="highlight">Introduction</span></h2>
+    <p class="slide-body anim d3" style="margin-top:20px;">
+      The <strong style="color:var(--accent)">NewsRovalt System</strong> is a web-based news application that provides users with real-time news updates from multiple categories such as technology, sports, business, entertainment, and health. It serves as a centralized platform where users can easily browse and access the latest news articles using external News APIs.
+    </p>
+    <div class="three-col anim d4" style="margin-top:30px;">
+      <div class="card">
+        <div class="card-icon"><i class="fas fa-globe"></i></div>
+        <h4 style="font-size:15px; margin-bottom:8px;">Centralized Platform</h4>
+        <p style="font-size:13px; color:var(--muted); line-height:1.6;">All news categories accessible from a single interface</p>
+      </div>
+      <div class="card">
+        <div class="card-icon"><i class="fas fa-bolt"></i></div>
+        <h4 style="font-size:15px; margin-bottom:8px;">Real-Time Updates</h4>
+        <p style="font-size:13px; color:var(--muted); line-height:1.6;">Instant news fetching via API integration</p>
+      </div>
+      <div class="card">
+        <div class="card-icon"><i class="fas fa-mobile-alt"></i></div>
+        <h4 style="font-size:15px; margin-bottom:8px;">Responsive Design</h4>
+        <p style="font-size:13px; color:var(--muted); line-height:1.6;">Smooth experience across all devices</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 4: 现有系统 vs 新系统 -->
+  <div class="slide" data-title="Existing vs New System">
+    <div class="slide-tag anim d1">Problem Analysis</div>
+    <h2 class="slide-title anim d2">Existing vs <span class="highlight">New System</span></h2>
+    <div class="two-col anim d3" style="margin-top:30px;">
+      <div style="background:rgba(192,57,43,0.06); border:1px solid rgba(192,57,43,0.15); border-radius:14px; padding:24px;">
+        <h3 style="font-size:16px; color:var(--danger); margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+          <i class="fas fa-times-circle"></i> Existing System
+        </h3>
+        <ul class="check-list cross-list">
+          <li><i class="fas fa-times"></i>Multiple source dependency</li>
+          <li><i class="fas fa-times"></i>Manual news search required</li>
+          <li><i class="fas fa-times"></i>Lack of centralization</li>
+          <li><i class="fas fa-times"></i>Time-consuming browsing</li>
+          <li><i class="fas fa-times"></i>No categorized organization</li>
+        </ul>
+      </div>
+      <div style="background:rgba(39,174,96,0.06); border:1px solid rgba(39,174,96,0.15); border-radius:14px; padding:24px;">
+        <h3 style="font-size:16px; color:var(--success); margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+          <i class="fas fa-check-circle"></i> NewsRovalt System
+        </h3>
+        <ul class="check-list">
+          <li><i class="fas fa-check"></i>Centralized news platform</li>
+          <li><i class="fas fa-check"></i>Faster access to information</li>
+          <li><i class="fas fa-check"></i>Improved user experience</li>
+          <li><i class="fas fa-check"></i>Real-time updates via API</li>
+          <li><i class="fas fa-check"></i>Category-based browsing</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 5: 项目概览 -->
+  <div class="slide" data-title="Project Profile">
+    <div class="slide-tag anim d1">Project Overview</div>
+    <h2 class="slide-title anim d2">Project <span class="highlight">Profile</span></h2>
+    <div class="anim d3" style="margin-top:24px; width:100%; max-width:750px;">
+      <table class="styled-table">
+        <tbody>
+          <tr><td style="color:var(--accent); font-weight:600; width:40%;">Project Title</td><td>NewsRovalt - News Web Application</td></tr>
+          <tr><td style="color:var(--accent); font-weight:600;">Category</td><td>Web-Based Application</td></tr>
+          <tr><td style="color:var(--accent); font-weight:600;">Duration</td><td>3-4 Months</td></tr>
+          <tr><td style="color:var(--accent); font-weight:600;">Front-End</td><td>React.js, HTML, CSS</td></tr>
+          <tr><td style="color:var(--accent); font-weight:600;">Back-End</td><td>Not Applicable (API-Based)</td></tr>
+          <tr><td style="color:var(--accent); font-weight:600;">API Integration</td><td>News API</td></tr>
+          <tr><td style="color:var(--accent); font-weight:600;">Security</td><td>Secure API Handling</td></tr>
+          <tr><td style="color:var(--accent); font-weight:600;">Guide</td><td>Prof. Dharmishtha Surati</td></tr>
+          <tr><td style="color:var(--accent); font-weight:600;">Team Members</td><td>Rohit Vala, Naitik Vala</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 幻灯片 6: 目标 -->
+  <div class="slide" data-title="Objectives">
+    <div class="slide-tag anim d1">Goals</div>
+    <h2 class="slide-title anim d2">System <span class="highlight">Objectives</span></h2>
+    <div class="two-col anim d3" style="margin-top:30px;">
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-icon"><i class="fas fa-universal-access"></i></div>
+          <h4 style="font-size:15px; margin-bottom:6px;">High Accessibility</h4>
+          <p style="font-size:13px; color:var(--muted); line-height:1.6;">Easy access to news anytime and anywhere with internet connectivity.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon"><i class="fas fa-smile"></i></div>
+          <h4 style="font-size:15px; margin-bottom:6px;">User Satisfaction</h4>
+          <p style="font-size:13px; color:var(--muted); line-height:1.6;">Fast, accurate, and categorized news with a smooth interface.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-icon"><i class="fas fa-signal"></i></div>
+          <h4 style="font-size:15px; margin-bottom:6px;">Broader Information Reach</h4>
+          <p style="font-size:13px; color:var(--muted); line-height:1.6;">Access different news types on one platform without switching sources.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+          <h4 style="font-size:15px; margin-bottom:6px;">Platform Growth</h4>
+          <p style="font-size:13px; color:var(--muted); line-height:1.6;">Continuous usage improves user engagement and system reliability.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 7: 优缺点 -->
+  <div class="slide" data-title="Advantages & Limitations">
+    <div class="slide-tag anim d1">Evaluation</div>
+    <h2 class="slide-title anim d2">Advantages & <span class="highlight">Limitations</span></h2>
+    <div class="two-col anim d3" style="margin-top:30px;">
+      <div>
+        <h3 style="font-size:15px; color:var(--success); margin-bottom:16px; font-weight:700;">
+          <i class="fas fa-plus-circle" style="margin-right:6px;"></i>Advantages
+        </h3>
+        <ul class="check-list">
+          <li><i class="fas fa-check"></i>Fast news access - quick reading of latest news</li>
+          <li><i class="fas fa-check"></i>Real-time updates via API integration</li>
+          <li><i class="fas fa-check"></i>24/7 availability from any location</li>
+          <li><i class="fas fa-check"></i>Easy navigation with user-friendly interface</li>
+          <li><i class="fas fa-check"></i>Category-based organized news display</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="font-size:15px; color:var(--danger); margin-bottom:16px; font-weight:700;">
+          <i class="fas fa-minus-circle" style="margin-right:6px;"></i>Limitations
+        </h3>
+        <ul class="check-list cross-list">
+          <li><i class="fas fa-times"></i>Requires active internet connection</li>
+          <li><i class="fas fa-times"></i>Depends on external API for data</li>
+          <li><i class="fas fa-times"></i>Limited personalization features</li>
+          <li><i class="fas fa-times"></i>Data accuracy depends on API source</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 8: 环境描述 -->
+  <div class="slide" data-title="Environment">
+    <div class="slide-tag anim d1">Chapter 2</div>
+    <h2 class="slide-title anim d2">Environment <span class="highlight">Description</span></h2>
+    <div class="two-col anim d3" style="margin-top:24px;">
+      <div>
+        <h4 style="font-size:14px; color:var(--accent); margin-bottom:14px; text-transform:uppercase; letter-spacing:2px;">Hardware Requirements</h4>
+        <table class="styled-table">
+          <thead><tr><th>Component</th><th>Minimum</th></tr></thead>
+          <tbody>
+            <tr><td>Processor</td><td>Intel Core i3</td></tr>
+            <tr><td>RAM</td><td>4 GB</td></tr>
+            <tr><td>Storage</td><td>100 GB HDD</td></tr>
+            <tr><td>OS</td><td>Windows 10</td></tr>
+            <tr><td>Internet</td><td>2 Mbps</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h4 style="font-size:14px; color:var(--accent); margin-bottom:14px; text-transform:uppercase; letter-spacing:2px;">Software Requirements</h4>
+        <table class="styled-table">
+          <thead><tr><th>Component</th><th>Technology</th></tr></thead>
+          <tbody>
+            <tr><td>Frontend</td><td>React.js, HTML5, CSS3</td></tr>
+            <tr><td>Backend</td><td>N/A (API-Based)</td></tr>
+            <tr><td>API</td><td>News API</td></tr>
+            <tr><td>IDE</td><td>VS Code</td></tr>
+            <tr><td>Version Control</td><td>Git, GitHub</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 9: 系统描述 -->
+  <div class="slide" data-title="System Description">
+    <div class="slide-tag anim d1">Chapter 3</div>
+    <h2 class="slide-title anim d2">System <span class="highlight">Description</span></h2>
+    <p class="slide-body anim d3" style="margin-top:16px;">
+      Developed using <strong style="color:var(--accent)">React.js</strong>, the system ensures fast rendering and dynamic content updates. Data is fetched from external News APIs, and the UI is responsive and intuitive for a seamless browsing experience across devices.
+    </p>
+    <div class="three-col anim d4" style="margin-top:24px;">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:28px; color:var(--accent); margin-bottom:10px;"><i class="fas fa-palette"></i></div>
+        <h4 style="font-size:14px; margin-bottom:6px;">Clean UI</h4>
+        <p style="font-size:12px; color:var(--muted);">Responsive design for better usability</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:28px; color:var(--accent); margin-bottom:10px;"><i class="fas fa-tags"></i></div>
+        <h4 style="font-size:14px; margin-bottom:6px;">Categories</h4>
+        <p style="font-size:12px; color:var(--muted);">Sports, Tech, Business, Health, etc.</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:28px; color:var(--accent); margin-bottom:10px;"><i class="fas fa-search"></i></div>
+        <h4 style="font-size:14px; margin-bottom:6px;">Search</h4>
+        <p style="font-size:12px; color:var(--muted);">Keyword-based instant news search</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 10: 系统功能 -->
+  <div class="slide" data-title="Functionality">
+    <div class="slide-tag anim d1">Features</div>
+    <h2 class="slide-title anim d2">System <span class="highlight">Functionality</span></h2>
+    <div class="two-col anim d3" style="margin-top:24px;">
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <h4 style="font-size:14px; color:var(--accent); margin-bottom:10px;"><i class="fas fa-users" style="margin-right:8px;"></i>User Interaction</h4>
+          <p style="font-size:13px; color:var(--muted); line-height:1.6;">Admin maintains system performance and API integration. Users browse, search, and read news articles.</p>
+        </div>
+        <div class="card">
+          <h4 style="font-size:14px; color:var(--accent); margin-bottom:10px;"><i class="fas fa-rss" style="margin-right:8px;"></i>News Management</h4>
+          <p style="font-size:13px; color:var(--muted); line-height:1.6;">Real-time fetching via API, categorized display, and dynamic content updates without reloading.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <h4 style="font-size:14px; color:var(--accent); margin-bottom:10px;"><i class="fas fa-search-plus" style="margin-right:8px;"></i>Search Functionality</h4>
+          <p style="font-size:13px; color:var(--muted); line-height:1.6;">Users can search news using keywords with instant relevant results display.</p>
+        </div>
+        <div class="card">
+          <h4 style="font-size:14px; color:var(--accent); margin-bottom:10px;"><i class="fas fa-tachometer-alt" style="margin-right:8px;"></i>Performance</h4>
+          <p style="font-size:13px; color:var(--muted); line-height:1.6;">Fast loading with React.js, responsive UI for all devices, smooth navigation between pages.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 11: 可行性研究 -->
+  <div class="slide" data-title="Feasibility Study">
+    <div class="slide-tag anim d1">Chapter 4</div>
+    <h2 class="slide-title anim d2">Feasibility <span class="highlight">Study</span></h2>
+    <div class="anim d3" style="margin-top:24px; width:100%; max-width:800px;">
+      <div class="stat-bar">
+        <div class="stat-bar-label"><span>Technical Feasibility</span><span>95%</span></div>
+        <div class="stat-bar-track"><div class="stat-bar-fill" data-width="95"></div></div>
+      </div>
+      <div class="stat-bar">
+        <div class="stat-bar-label"><span>Economic Feasibility</span><span>90%</span></div>
+        <div class="stat-bar-track"><div class="stat-bar-fill" data-width="90"></div></div>
+      </div>
+      <div class="stat-bar">
+        <div class="stat-bar-label"><span>Operational Feasibility</span><span>92%</span></div>
+        <div class="stat-bar-track"><div class="stat-bar-fill" data-width="92"></div></div>
+      </div>
+      <div class="stat-bar">
+        <div class="stat-bar-label"><span>Schedule Feasibility</span><span>88%</span></div>
+        <div class="stat-bar-track"><div class="stat-bar-fill" data-width="88"></div></div>
+      </div>
+    </div>
+    <p class="slide-body anim d4" style="margin-top:24px; max-width:700px; font-size:14px; color:var(--muted);">
+      The project uses open-source tools (React.js, News API) minimizing costs. Component-based architecture supports scalability, and the 3-4 month timeline is achievable with Agile methodology.
+    </p>
+  </div>
+
+  <!-- 幻灯片 12: Agile模型 -->
+  <div class="slide" data-title="Agile Model">
+    <div class="slide-tag anim d1">Methodology</div>
+    <h2 class="slide-title anim d2">Agile <span class="highlight">Development Model</span></h2>
+    <div class="anim d3" style="margin-top:24px; width:100%; max-width:900px;">
+      <div class="use-case-diagram" style="gap:12px;">
+        <div class="uc-group anim-scale d3">
+          <div class="uc-group-title">Phase 1</div>
+          <div class="uc-item">Requirement Gathering</div>
+          <div class="uc-item">User Analysis</div>
+          <div class="uc-item">Market Research</div>
+        </div>
+        <div class="uc-connector anim-fade d4"><i class="fas fa-arrow-right"></i></div>
+        <div class="uc-group anim-scale d4">
+          <div class="uc-group-title">Phase 2</div>
+          <div class="uc-item">Planning</div>
+          <div class="uc-item">Milestone Definition</div>
+          <div class="uc-item">Resource Allocation</div>
+        </div>
+        <div class="uc-connector anim-fade d5"><i class="fas fa-arrow-right"></i></div>
+        <div class="uc-group anim-scale d5">
+          <div class="uc-group-title">Phase 3</div>
+          <div class="uc-item">UI/UX Design</div>
+          <div class="uc-item">Component Structure</div>
+          <div class="uc-item">API Flow Design</div>
+        </div>
+      </div>
+      <div class="use-case-diagram" style="gap:12px; margin-top:12px;">
+        <div class="uc-group anim-scale d5">
+          <div class="uc-group-title">Phase 4</div>
+          <div class="uc-item">Frontend Development</div>
+          <div class="uc-item">API Integration</div>
+          <div class="uc-item">State Management</div>
+        </div>
+        <div class="uc-connector anim-fade d6"><i class="fas fa-arrow-right"></i></div>
+        <div class="uc-group anim-scale d6">
+          <div class="uc-group-title">Phase 5</div>
+          <div class="uc-item">Unit Testing</div>
+          <div class="uc-item">Integration Testing</div>
+          <div class="uc-item">Bug Fixing</div>
+        </div>
+        <div class="uc-connector anim-fade d7"><i class="fas fa-arrow-right"></i></div>
+        <div class="uc-group anim-scale d7">
+          <div class="uc-group-title">Phase 6</div>
+          <div class="uc-item">Deployment</div>
+          <div class="uc-item">Monitoring</div>
+          <div class="uc-item">Maintenance</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 13: 时间线 -->
+  <div class="slide" data-title="Timeline">
+    <div class="slide-tag anim d1">Scheduling</div>
+    <h2 class="slide-title anim d2">Project <span class="highlight">Timeline</span></h2>
+    <div class="gantt-chart anim d3" style="margin-top:24px;">
+      <div class="gantt-months">
+        <div class="gantt-month">Jan 2026</div>
+        <div class="gantt-month">Feb 2026</div>
+        <div class="gantt-month">Mar 2026</div>
+        <div class="gantt-month">Apr 2026</div>
+      </div>
+      <div class="gantt-row"><div class="gantt-label">Requirement Gathering</div><div class="gantt-track"><div class="gantt-bar" data-left="0" data-width="10"></div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Analysis & Scoping</div><div class="gantt-track"><div class="gantt-bar" data-left="8" data-width="12"></div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Risk Analysis</div><div class="gantt-track"><div class="gantt-bar" data-left="15" data-width="14"></div></div></div>
+      <div class="gantt-row"><div class="gantt-label">UI/UX Development</div><div class="gantt-track"><div class="gantt-bar" data-left="30" data-width="15"></div></div></div>
+      <div class="gantt-row"><div class="gantt-label">API Integration</div><div class="gantt-track"><div class="gantt-bar" data-left="42" data-width="22"></div></div></div>
+      <div class="gantt-row"><div class="gantt-label">News Card Management</div><div class="gantt-track"><div class="gantt-bar" data-left="55" data-width="20"></div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Search & Filters</div><div class="gantt-track"><div class="gantt-bar" data-left="68" data-width="15"></div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Admin Panel</div><div class="gantt-track"><div class="gantt-bar" data-left="82" data-width="6"></div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Testing & Validation</div><div class="gantt-track"><div class="gantt-bar" data-left="86" data-width="14"></div></div></div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 14: 用例图 -->
+  <div class="slide" data-title="Use Case Diagram">
+    <div class="slide-tag anim d1">UML - Chapter 5</div>
+    <h2 class="slide-title anim d2">Use Case <span class="highlight">Diagram</span></h2>
+    <div class="anim d3" style="margin-top:20px; width:100%; max-width:900px;">
+      <div style="display:flex; justify-content:space-around; flex-wrap:wrap; gap:20px;">
+        <div style="text-align:center;">
+          <div class="uml-node actor anim-scale d3"><i class="fas fa-user-shield" style="font-size:18px;"></i><br>Admin</div>
+          <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
+            <div class="uc-item anim-left d4">Login System</div>
+            <div class="uc-item anim-left d5">Manage Users</div>
+            <div class="uc-item anim-left d6">Manage News</div>
+            <div class="uc-item anim-left d7">View Reports</div>
+            <div class="uc-item anim-left d8">System Settings</div>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <div style="width:2px; height:60px; background:var(--border);"></div>
+          <div style="background:rgba(212,168,83,0.06); border:1px dashed var(--border); border-radius:16px; padding:20px 30px; text-align:center; margin:10px 0;">
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--accent); margin-bottom:12px; font-weight:600;">NewsRovalt System</div>
+            <div class="uc-item" style="margin:4px;">Browse News</div>
+            <div class="uc-item" style="margin:4px;">Search News</div>
+            <div class="uc-item" style="margin:4px;">Filter by Category</div>
+            <div class="uc-item" style="margin:4px;">Read Article</div>
+            <div class="uc-item" style="margin:4px;">Bookmark</div>
+          </div>
+          <div style="width:2px; height:60px; background:var(--border);"></div>
+        </div>
+        <div style="text-align:center;">
+          <div class="uml-node actor anim-scale d3"><i class="fas fa-user" style="font-size:18px;"></i><br>User</div>
+          <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
+            <div class="uc-item anim-right d4">Register / Login</div>
+            <div class="uc-item anim-right d5">Browse Categories</div>
+            <div class="uc-item anim-right d6">Search News</div>
+            <div class="uc-item anim-right d7">Read Articles</div>
+            <div class="uc-item anim-right d8">Bookmark News</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 15: 类图 -->
+  <div class="slide" data-title="Class Diagram">
+    <div class="slide-tag anim d1">UML</div>
+    <h2 class="slide-title anim d2">Class <span class="highlight">Diagram</span></h2>
+    <div class="anim d3" style="margin-top:20px; width:100%; max-width:900px;">
+      <div style="display:flex; gap:20px; justify-content:center; flex-wrap:wrap;">
+        <div class="db-table anim-scale d3" style="min-width:200px;">
+          <div class="db-table-header"><i class="fas fa-user"></i> User</div>
+          <div class="db-table-body">
+            <div class="db-row"><span class="pk">id</span><span>int</span><span>PK</span><span>Auto</span></div>
+            <div class="db-row"><span>username</span><span>varchar</span><span></span><span>100</span></div>
+            <div class="db-row"><span>email</span><span>varchar</span><span></span><span>150</span></div>
+            <div class="db-row"><span>password</span><span>varchar</span><span></span><span>255</span></div>
+            <div class="db-row"><span>created_at</span><span>timestamp</span><span></span><span></span></div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; color:var(--accent); font-size:20px;">
+          <i class="fas fa-arrows-alt-h anim-fade d5"></i>
+        </div>
+        <div class="db-table anim-scale d4" style="min-width:200px;">
+          <div class="db-table-header"><i class="fas fa-bookmark"></i> Bookmark</div>
+          <div class="db-table-body">
+            <div class="db-row"><span class="pk">id</span><span>int</span><span>PK</span><span>Auto</span></div>
+            <div class="db-row"><span>user_id</span><span>int</span><span>FK</span><span></span></div>
+            <div class="db-row"><span>news_id</span><span>int</span><span>FK</span><span></span></div>
+            <div class="db-row"><span>saved_at</span><span>timestamp</span><span></span><span></span></div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; color:var(--accent); font-size:20px;">
+          <i class="fas fa-arrows-alt-h anim-fade d6"></i>
+        </div>
+        <div class="db-table anim-scale d5" style="min-width:200px;">
+          <div class="db-table-header"><i class="fas fa-newspaper"></i> News</div>
+          <div class="db-table-body">
+            <div class="db-row"><span class="pk">news_id</span><span>int</span><span>PK</span><span>Auto</span></div>
+            <div class="db-row"><span>title</span><span>varchar</span><span></span><span>255</span></div>
+            <div class="db-row"><span>description</span><span>text</span><span></span><span></span></div>
+            <div class="db-row"><span>category</span><span>varchar</span><span></span><span>100</span></div>
+            <div class="db-row"><span>author</span><span>varchar</span><span></span><span>150</span></div>
+            <div class="db-row"><span>url</span><span>varchar</span><span></span><span>255</span></div>
+            <div class="db-row"><span>published_at</span><span>timestamp</span><span></span><span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 16: 活动图 -->
+  <div class="slide" data-title="Activity Diagram">
+    <div class="slide-tag anim d1">UML</div>
+    <h2 class="slide-title anim d2">Activity <span class="highlight">Diagram</span></h2>
+    <div class="two-col anim d3" style="margin-top:20px;">
+      <div class="diagram-box">
+        <h4 style="font-size:13px; color:var(--accent); margin-bottom:16px; text-transform:uppercase; letter-spacing:2px;">Admin Flow</h4>
+        <div class="timeline">
+          <div class="timeline-item"><div class="t-label">Start</div><div class="t-text">Admin opens system</div></div>
+          <div class="timeline-item"><div class="t-label">Step 1</div><div class="t-text">Login with credentials</div></div>
+          <div class="timeline-item"><div class="t-label">Step 2</div><div class="t-text">Choose: Manage Users / Manage News</div></div>
+          <div class="timeline-item"><div class="t-label">Step 3</div><div class="t-text">Perform CRUD operations</div></div>
+          <div class="timeline-item"><div class="t-label">Step 4</div><div class="t-text">View system reports</div></div>
+          <div class="timeline-item"><div class="t-label">End</div><div class="t-text">Logout</div></div>
+        </div>
+      </div>
+      <div class="diagram-box">
+        <h4 style="font-size:13px; color:var(--accent); margin-bottom:16px; text-transform:uppercase; letter-spacing:2px;">User Flow</h4>
+        <div class="timeline">
+          <div class="timeline-item"><div class="t-label">Start</div><div class="t-text">User visits website</div></div>
+          <div class="timeline-item"><div class="t-label">Step 1</div><div class="t-text">Register / Login (optional)</div></div>
+          <div class="timeline-item"><div class="t-label">Step 2</div><div class="t-text">Browse categories or search</div></div>
+          <div class="timeline-item"><div class="t-label">Step 3</div><div class="t-text">Select news article</div></div>
+          <div class="timeline-item"><div class="t-label">Step 4</div><div class="t-text">Read full article (redirect)</div></div>
+          <div class="timeline-item"><div class="t-label">End</div><div class="t-text">Bookmark or exit</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 17: 部署图 -->
+  <div class="slide" data-title="Deployment Diagram">
+    <div class="slide-tag anim d1">UML</div>
+    <h2 class="slide-title anim d2">Deployment <span class="highlight">Diagram</span></h2>
+    <div class="anim d3" style="margin-top:24px; width:100%; max-width:800px;">
+      <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:24px;">
+        <div class="card anim-scale d3" style="text-align:center; min-width:160px;">
+          <div style="font-size:28px; color:var(--accent); margin-bottom:10px;"><i class="fas fa-desktop"></i></div>
+          <h4 style="font-size:14px; margin-bottom:4px;">Client Browser</h4>
+          <p style="font-size:11px; color:var(--muted);">Chrome / Firefox / Safari</p>
+        </div>
+        <div class="anim-fade d4" style="color:var(--accent); font-size:20px;"><i class="fas fa-arrows-alt-h"></i><br><span style="font-size:10px; color:var(--muted);">HTTPS</span></div>
+        <div class="card anim-scale d4" style="text-align:center; min-width:160px;">
+          <div style="font-size:28px; color:var(--accent); margin-bottom:10px;"><i class="fas fa-server"></i></div>
+          <h4 style="font-size:14px; margin-bottom:4px;">Web Server</h4>
+          <p style="font-size:11px; color:var(--muted);">Netlify / Vercel</p>
+        </div>
+        <div class="anim-fade d5" style="color:var(--accent); font-size:20px;"><i class="fas fa-arrows-alt-h"></i><br><span style="font-size:10px; color:var(--muted);">REST API</span></div>
+        <div class="card anim-scale d5" style="text-align:center; min-width:160px;">
+          <div style="font-size:28px; color:var(--accent); margin-bottom:10px;"><i class="fas fa-cloud"></i></div>
+          <h4 style="font-size:14px; margin-bottom:4px;">News API</h4>
+          <p style="font-size:11px; color:var(--muted);">External Data Source</p>
+        </div>
+      </div>
+      <div class="anim d6" style="margin-top:30px; text-align:center;">
+        <p style="font-size:13px; color:var(--muted); max-width:500px; margin:0 auto; line-height:1.7;">
+          The React.js application is deployed on a static hosting platform. It communicates directly with the News API to fetch real-time data, eliminating the need for a backend server.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 18: 数据库设计 -->
+  <div class="slide" data-title="Database Design">
+    <div class="slide-tag anim d1">Chapter 5.5</div>
+    <h2 class="slide-title anim d2">Database <span class="highlight">Design</span></h2>
+    <div class="three-col anim d3" style="margin-top:24px;">
+      <div class="db-table anim-scale d3">
+        <div class="db-table-header"><i class="fas fa-user"></i> User Table</div>
+        <div class="db-table-body">
+          <div class="db-row"><span class="pk">id</span><span>int</span><span>PK</span><span>Auto</span></div>
+          <div class="db-row"><span>username</span><span>varchar(100)</span><span>NN</span><span></span></div>
+          <div class="db-row"><span>email</span><span>varchar(150)</span><span>NN</span><span></span></div>
+          <div class="db-row"><span>password</span><span>varchar(255)</span><span>NN</span><span></span></div>
+          <div class="db-row"><span>created_at</span><span>timestamp</span><span>NN</span><span></span></div>
+        </div>
+      </div>
+      <div class="db-table anim-scale d5">
+        <div class="db-table-header"><i class="fas fa-newspaper"></i> News Table</div>
+        <div class="db-table-body">
+          <div class="db-row"><span class="pk">news_id</span><span>int</span><span>PK</span><span>Auto</span></div>
+          <div class="db-row"><span>title</span><span>varchar(255)</span><span>NN</span><span></span></div>
+          <div class="db-row"><span>description</span><span>text</span><span>NN</span><span></span></div>
+          <div class="db-row"><span>category</span><span>varchar(100)</span><span>NN</span><span></span></div>
+          <div class="db-row"><span>author</span><span>varchar(150)</span><span></span><span>Yes</span></div>
+          <div class="db-row"><span>source</span><span>varchar(100)</span><span>NN</span><span></span></div>
+          <div class="db-row"><span>url</span><span>varchar(255)</span><span>NN</span><span></span></div>
+          <div class="db-row"><span>image_url</span><span>varchar(255)</span><span></span><span>Yes</span></div>
+          <div class="db-row"><span>published_at</span><span>timestamp</span><span>NN</span><span></span></div>
+        </div>
+      </div>
+      <div class="db-table anim-scale d7">
+        <div class="db-table-header"><i class="fas fa-bookmark"></i> Bookmark Table</div>
+        <div class="db-table-body">
+          <div class="db-row"><span class="pk">id</span><span>int</span><span>PK</span><span>Auto</span></div>
+          <div class="db-row"><span>user_id</span><span>int</span><span>FK</span><span>NN</span></div>
+          <div class="db-row"><span>news_id</span><span>int</span><span>FK</span><span>NN</span></div>
+          <div class="db-row"><span>saved_at</span><span>timestamp</span><span>NN</span><span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 19: 实现截图 -->
+  <div class="slide" data-title="Implementation Screens">
+    <div class="slide-tag anim d1">Chapter 6</div>
+    <h2 class="slide-title anim d2">System <span class="highlight">Implementation</span></h2>
+    <div class="screen-grid anim d3" style="margin-top:20px;">
+      <div class="screen-item">
+        <div class="screen-item-img"><i class="fas fa-user-plus"></i></div>
+        <div class="screen-item-label">Registration</div>
+        <div class="screen-item-desc">User sign-up with validation</div>
+      </div>
+      <div class="screen-item">
+        <div class="screen-item-img"><i class="fas fa-sign-in-alt"></i></div>
+        <div class="screen-item-label">Login</div>
+        <div class="screen-item-desc">Secure authentication system</div>
+      </div>
+      <div class="screen-item">
+        <div class="screen-item-img"><i class="fas fa-key"></i></div>
+        <div class="screen-item-label">Forgot Password</div>
+        <div class="screen-item-desc">Email-based password reset</div>
+      </div>
+      <div class="screen-item">
+        <div class="screen-item-img"><i class="fas fa-home"></i></div>
+        <div class="screen-item-label">Home Page</div>
+        <div class="screen-item-desc">Main dashboard with news feed</div>
+      </div>
+      <div class="screen-item">
+        <div class="screen-item-img"><i class="fas fa-th-large"></i></div>
+        <div class="screen-item-label">Categories</div>
+        <div class="screen-item-desc">News filtered by category</div>
+      </div>
+      <div class="screen-item">
+        <div class="screen-item-img"><i class="fas fa-search"></i></div>
+        <div class="screen-item-label">Search</div>
+        <div class="screen-item-desc">Keyword-based news search</div>
+      </div>
+      <div class="screen-item">
+        <div class="screen-item-img"><i class="fas fa-mobile-alt"></i></div>
+        <div class="screen-item-label">Responsive UI</div>
+        <div class="screen-item-desc">Mobile-friendly layout</div>
+      </div>
+      <div class="screen-item">
+        <div class="screen-item-img"><i class="fas fa-bars"></i></div>
+        <div class="screen-item-label">Toggle Menu</div>
+        <div class="screen-item-desc">Hamburger navigation</div>
+      </div>
+      <div class="screen-item">
+        <div class="screen-item-img"><i class="fas fa-external-link-alt"></i></div>
+        <div class="screen-item-label">Read More</div>
+        <div class="screen-item-desc">Redirect to original source</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 20: 测试 -->
+  <div class="slide" data-title="System Testing">
+    <div class="slide-tag anim d1">Chapter 7</div>
+    <h2 class="slide-title anim d2">System <span class="highlight">Testing</span></h2>
+    <div class="two-col anim d3" style="margin-top:24px;">
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <h4 style="font-size:14px; color:var(--accent); margin-bottom:8px;"><i class="fas fa-code" style="margin-right:6px;"></i>White-Box Testing</h4>
+          <p style="font-size:12px; color:var(--muted); line-height:1.6;">Examines internal logic, exercises all independent paths, tests loops at boundaries, and validates internal data structures.</p>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <h4 style="font-size:14px; color:var(--accent); margin-bottom:8px;"><i class="fas fa-cube" style="margin-right:6px;"></i>Black-Box Testing</h4>
+          <p style="font-size:12px; color:var(--muted); line-height:1.6;">Focuses on functional requirements, checks for incorrect functions, interface errors, and performance issues.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <h4 style="font-size:14px; color:var(--accent); margin-bottom:8px;"><i class="fas fa-puzzle-piece" style="margin-right:6px;"></i>Unit & Integration Testing</h4>
+          <p style="font-size:12px; color:var(--muted); line-height:1.6;">Verifies individual modules (auth, search, categories) and their interactions, ensuring seamless data flow.</p>
+        </div>
+        <div class="card">
+          <h4 style="font-size:14px; color:var(--accent); margin-bottom:8px;"><i class="fas fa-flask" style="margin-right:6px;"></i>Alpha & Beta Testing</h4>
+          <p style="font-size:12px; color:var(--muted); line-height:1.6;">Internal testing by team and faculty, followed by external testing by volunteers for real-world feedback.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 21: 结论 -->
+  <div class="slide" data-title="Conclusion">
+    <div class="slide-tag anim d1">Chapter 8</div>
+    <h2 class="slide-title anim d2"><span class="highlight">Conclusion</span></h2>
+    <p class="slide-body anim d3" style="margin-top:20px;">
+      The <strong style="color:var(--accent)">NewsRovalt System</strong> successfully provides a seamless, user-friendly platform for accessing real-time news updates. By implementing an efficient search and category system, users can quickly find news based on their preferences, making the browsing experience intuitive and enjoyable.
+    </p>
+    <div class="three-col anim d4" style="margin-top:24px;">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:24px; color:var(--success); margin-bottom:8px;"><i class="fas fa-check-double"></i></div>
+        <h4 style="font-size:14px; margin-bottom:4px;">Ease of Access</h4>
+        <p style="font-size:12px; color:var(--muted);">Quick news discovery</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:24px; color:var(--success); margin-bottom:8px;"><i class="fas fa-shield-alt"></i></div>
+        <h4 style="font-size:14px; margin-bottom:4px;">Secure Platform</h4>
+        <p style="font-size:12px; color:var(--muted);">Safe API handling</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:24px; color:var(--success); margin-bottom:8px;"><i class="fas fa-layer-group"></i></div>
+        <h4 style="font-size:14px; margin-bottom:4px;">Modern Tech</h4>
+        <p style="font-size:12px; color:var(--muted);">React.js based</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 22: 未来范围 -->
+  <div class="slide" data-title="Future Scope">
+    <div class="slide-tag anim d1">Looking Ahead</div>
+    <h2 class="slide-title anim d2">Future <span class="highlight">Scope</span></h2>
+    <div class="two-col anim d3" style="margin-top:24px;">
+      <div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-icon"><i class="fas fa-brain"></i></div>
+          <h4 style="font-size:14px; margin-bottom:4px;">AI Recommendations</h4>
+          <p style="font-size:12px; color:var(--muted);">Personalized news based on user behavior</p>
+        </div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-icon"><i class="fas fa-mobile-alt"></i></div>
+          <h4 style="font-size:14px; margin-bottom:4px;">Mobile App</h4>
+          <p style="font-size:12px; color:var(--muted);">Dedicated iOS and Android applications</p>
+        </div>
+        <div class="card">
+          <div class="card-icon"><i class="fas fa-globe-americas"></i></div>
+          <h4 style="font-size:14px; margin-bottom:4px;">Multi-Language Support</h4>
+          <p style="font-size:12px; color:var(--muted);">Global expansion with regional languages</p>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-icon"><i class="fas fa-vr-cardboard"></i></div>
+          <h4 style="font-size:14px; margin-bottom:4px;">AR Integration</h4>
+          <p style="font-size:12px; color:var(--muted);">Immersive news reading experience</p>
+        </div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-icon"><i class="fas fa-robot"></i></div>
+          <h4 style="font-size:14px; margin-bottom:4px;">Virtual Assistant</h4>
+          <p style="font-size:12px; color:var(--muted);">AI chatbot for real-time assistance</p>
+        </div>
+        <div class="card">
+          <div class="card-icon"><i class="fas fa-wallet"></i></div>
+          <h4 style="font-size:14px; margin-bottom:4px;">Advanced Payments</h4>
+          <p style="font-size:12px; color:var(--muted);">Premium subscriptions & digital wallets</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 23: 参考文献 -->
+  <div class="slide" data-title="Bibliography">
+    <div class="slide-tag anim d1">References</div>
+    <h2 class="slide-title anim d2"><span class="highlight">Bibliography</span></h2>
+    <div class="two-col anim d3" style="margin-top:24px;">
+      <div>
+        <h4 style="font-size:13px; color:var(--accent); margin-bottom:12px; text-transform:uppercase; letter-spacing:2px;">Books</h4>
+        <ul class="check-list" style="gap:8px;">
+          <li><i class="fas fa-book" style="font-size:10px;"></i><span style="font-size:13px;">Web Development with HTML5 - Terry Felke-Morris</span></li>
+          <li><i class="fas fa-book" style="font-size:10px;"></i><span style="font-size:13px;">JavaScript: The Good Parts - Douglas Crockford</span></li>
+          <li><i class="fas fa-book" style="font-size:10px;"></i><span style="font-size:13px;">React.js Essentials - Artemij Fedosejev</span></li>
+          <li><i class="fas fa-book" style="font-size:10px;"></i><span style="font-size:13px;">Designing Web Usability - Jakob Nielsen</span></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="font-size:13px; color:var(--accent); margin-bottom:12px; text-transform:uppercase; letter-spacing:2px;">Online Resources</h4>
+        <ul class="check-list" style="gap:8px;">
+          <li><i class="fas fa-globe" style="font-size:10px;"></i><span style="font-size:13px;">GeeksforGeeks - Development concepts</span></li>
+          <li><i class="fas fa-globe" style="font-size:10px;"></i><span style="font-size:13px;">W3Schools - HTML, CSS, JS tutorials</span></li>
+          <li><i class="fas fa-globe" style="font-size:10px;"></i><span style="font-size:13px;">React.js Official Documentation</span></li>
+          <li><i class="fas fa-globe" style="font-size:10px;"></i><span style="font-size:13px;">NewsAPI.org - Real-time data API</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 幻灯片 24: 致谢 -->
+  <div class="slide" data-title="Acknowledgments">
+    <div class="slide-tag anim d1">Gratitude</div>
+    <h2 class="slide-title anim d2"><span class="highlight">Acknowledgments</span></h2>
+    <p class="slide-body anim d3" style="margin-top:20px; max-width:700px;">
+      I express my sincere thanks to <strong style="color:var(--accent)">Prof. Dharmishtha Surati</strong> for their leading guidance throughout the project. Special thanks to <strong style="color:var(--accent)">Dr. Brijesh D. Mehta</strong> (HOD) and <strong style="color:var(--accent)">Dr. Jignesh Vaghasiya</strong> (Principal) for providing necessary resources.
+    </p>
+    <p class="slide-body anim d4" style="margin-top:14px; max-width:700px;">
+      I am also grateful to Prof. Priyanka D. Rathod and Prof. Priyanka C. Patil (class coordinators), my friends, and the non-teaching staff for their valuable support.
+    </p>
+    <div class="anim d5" style="margin-top:30px;">
+      <div class="title-divider" style="margin:0 auto 14px;"></div>
+      <p style="font-size:16px; color:var(--accent); font-weight:600; text-align:center;">ROHIT VALA</p>
+      <p style="font-size:13px; color:var(--muted); text-align:center;">230761305132</p>
+    </div>
+  </div>
+
+  <!-- 幻灯片 25: 感谢 -->
+  <div class="slide" data-title="Thank You">
+    <div class="thank-you-text anim-scale d1">Thank You</div>
+    <div class="title-divider anim d2" style="margin:24px auto;"></div>
+    <p class="slide-subtitle anim d3" style="text-align:center;">
+      Questions & Discussion
+    </p>
+    <div class="title-meta anim d4" style="justify-content:center; margin-top:30px;">
+      <span><i class="fas fa-envelope"></i>rohittworkk@gmail.com</span>
+      <span><i class="fas fa-university"></i>SSASIT, Surat</span>
+    </div>
+    <p class="anim d5" style="margin-top:40px; font-size:12px; color:var(--muted); letter-spacing:2px; text-transform:uppercase;">
+      NewsRovalt - B.Sc. IT Semester VI Project 2025-26
+    </p>
+  </div>
+
+</div>
+
+<!-- 导航控件 -->
+<div class="nav-controls">
+  <button class="nav-btn" id="prevBtn" aria-label="Previous slide"><i class="fas fa-chevron-left"></i></button>
+  <div class="slide-counter"><span id="currentNum">1</span> / <span id="totalNum">25</span></div>
+  <button class="nav-btn" id="nextBtn" aria-label="Next slide"><i class="fas fa-chevron-right"></i></button>
+</div>
+
+<!-- 键盘提示 -->
+<div class="key-hint">
+  <span><kbd>&larr;</kbd> Previous</span>
+  <span><kbd>&rarr;</kbd> Next</span>
+  <span><kbd>F</kbd> Fullscreen</span>
+</div>
+
+<script>
+  // ===== 幻灯片引擎 =====
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let currentIndex = 0;
+  let isTransitioning = false;
+
+  const progressBar = document.getElementById('progressBar');
+  const currentNum = document.getElementById('currentNum');
+  const totalNum = document.getElementById('totalNum');
+  const slidePanel = document.getElementById('slidePanel');
+  const panelToggle = document.getElementById('panelToggle');
+
+  totalNum.textContent = totalSlides;
+
+  // 构建侧边面板
+  slides.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'panel-item' + (i === 0 ? ' active' : '');
+    item.textContent = `${String(i + 1).padStart(2, '0')}  ${s.dataset.title || 'Slide ' + (i + 1)}`;
+    item.addEventListener('click', () => goToSlide(i));
+    slidePanel.appendChild(item);
+  });
+
+  // 面板开关
+  let panelOpen = false;
+  panelToggle.addEventListener('click', () => {
+    panelOpen = !panelOpen;
+    slidePanel.classList.toggle('open', panelOpen);
+    panelToggle.innerHTML = panelOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+  });
+
+  // 更新UI
+  function updateUI() {
+    currentNum.textContent = currentIndex + 1;
+    progressBar.style.width = ((currentIndex + 1) / totalSlides * 100) + '%';
+
+    // 更新面板激活状态
+    document.querySelectorAll('.panel-item').forEach((item, i) => {
+      item.classList.toggle('active', i === currentIndex);
+    });
+
+    // 滚动面板到可见位置
+    const activeItem = slidePanel.querySelector('.panel-item.active');
+    if (activeItem) {
+      activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // 触发进度条动画
+    animateStatBars();
+    // 触发甘特图动画
+    animateGanttBars();
+  }
+
+  // 进度条动画
+  function animateStatBars() {
+    const activeSlide = slides[currentIndex];
+    activeSlide.querySelectorAll('.stat-bar-fill').forEach(bar => {
+      const w = bar.dataset.width;
+      // 先重置再触发
+      bar.style.width = '0%';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          bar.style.width = w + '%';
+        });
+      });
+    });
+  }
+
+  // 甘特图动画
+  function animateGanttBars() {
+    const activeSlide = slides[currentIndex];
+    activeSlide.querySelectorAll('.gantt-bar').forEach(bar => {
+      const left = bar.dataset.left;
+      const width = bar.dataset.width;
+      bar.style.left = left + '%';
+      bar.style.width = '0%';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          bar.style.width = width + '%';
+        });
+      });
+    });
+  }
+
+  // 跳转到指定幻灯片
+  function goToSlide(index) {
+    if (index === currentIndex || isTransitioning || index < 0 || index >= totalSlides) return;
+    isTransitioning = true;
+
+    const prevSlide = slides[currentIndex];
+    const nextSlide = slides[index];
+    const goingForward = index > currentIndex;
+
+    // 退出当前幻灯片
+    prevSlide.classList.remove('active');
+    prevSlide.classList.add(goingForward ? 'exit-up' : '');
+    prevSlide.style.transform = goingForward ? 'translateY(-60px) scale(0.97)' : 'translateY(60px) scale(0.97)';
+    prevSlide.style.opacity = '0';
+
+    // 准备下一个幻灯片的进入位置
+    nextSlide.style.transition = 'none';
+    nextSlide.style.transform = goingForward ? 'translateY(40px) scale(0.97)' : 'translateY(-40px) scale(0.97)';
+    nextSlide.style.opacity = '0';
+    nextSlide.style.visibility = 'visible';
+
+    // 强制回流
+    void nextSlide.offsetHeight;
+
+    // 设置过渡并激活
+    nextSlide.style.transition = '';
+    nextSlide.classList.add('active');
+    nextSlide.classList.remove('exit-up');
+    nextSlide.style.transform = '';
+    nextSlide.style.opacity = '';
+
+    currentIndex = index;
+    updateUI();
+
+    setTimeout(() => {
+      prevSlide.classList.remove('exit-up');
+      prevSlide.style.transform = '';
+      prevSlide.style.opacity = '';
+      prevSlide.style.visibility = '';
+      isTransitioning = false;
+    }, 700);
+  }
+
+  // 导航按钮
+  document.getElementById('prevBtn').addEventListener('click', () => goToSlide(currentIndex - 1));
+  document.getElementById('nextBtn').addEventListener('click', () => goToSlide(currentIndex + 1));
+
+  // 键盘导航
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      goToSlide(currentIndex + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goToSlide(currentIndex - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    } else if (e.key === 'Escape' && panelOpen) {
+      panelOpen = false;
+      slidePanel.classList.remove('open');
+      panelToggle.innerHTML = '<i class="fas fa-bars"></i>';
+    }
+  });
+
+  // 触摸滑动支持
+  let touchStartX = 0;
+  let touchStartY = 0;
+  document.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) goToSlide(currentIndex + 1);
+      else goToSlide(currentIndex - 1);
+    }
+  }, { passive: true });
+
+  // 鼠标滚轮支持（带节流）
+  let wheelTimeout = false;
+  document.addEventListener('wheel', (e) => {
+    if (wheelTimeout) return;
+    wheelTimeout = true;
+    if (e.deltaY > 30) goToSlide(currentIndex + 1);
+    else if (e.deltaY < -30) goToSlide(currentIndex - 1);
+    setTimeout(() => { wheelTimeout = false; }, 900);
+  }, { passive: true });
+
+  // 初始化
+  updateUI();
+</script>
+</body>
+</html>
